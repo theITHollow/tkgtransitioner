@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tkgtransitioner
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: 
+  name: tkgtransitionrole
+rules:
+- apiGroups: ["", "cluster.x-k8s.io"]
+  resources: ["pods","clusters","secrets"]
+  verbs: ["get", "watch", "list"]
+--- 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tkgtransitrolebinding
+subjects:
+- kind: ServiceAccount
+  name: tkgtransitioner # Name is case sensitive
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: tkgtransitionrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tkgtransition
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: tkgtransition
+        image: eshanks16/tkgtransition:v10
+        args: ["east2"]
+      restartPolicy: Never
+      serviceAccountName: tkgtransitioner
