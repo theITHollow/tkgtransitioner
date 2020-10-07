@@ -3,7 +3,7 @@
 # find out what status the cluster is in
 get_cluster_status(){
     local cluster=$1
-    status=$(kubectl get cluster $1 -o json | jq '.status.phase')
+    status=$(kubectl get cluster $1 -o json | jq '.status.controlPlaneInitialized')
     echo $status
 }
 
@@ -50,7 +50,7 @@ clusterstatus=NULL
 until [ $i -gt 60 ]
 do 
     clusterstatus=$(get_cluster_status $1)
-    if [[ $clusterstatus == '"Provisioned"' ]]
+    if [[ $clusterstatus == 'true' ]]
     then
         echo "Cluster has been provisioned"
         creds=$(get_creds $1)
