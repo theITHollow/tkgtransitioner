@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: tkgtransition
-        image: eshanks16/tkgtransition:v10
-        args: ["east2"]
+        image: powerninjas/tkgtransitioner
+        args: ["workload-cluster-name"]
       restartPolicy: Never
       serviceAccountName: tkgtransitioner
