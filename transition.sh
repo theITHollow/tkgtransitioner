@@ -7,6 +7,16 @@ get_cluster_status(){
     echo $status
 }
 
+get_postapply_yaml () {
+    local cluster=$1
+    yaml=$(kubectl get secret "$1-postcreate" -o jsonpath='{.data.*}' | base64 -d | wc -l)   
+    if [ $yaml -gt 5 ]; then
+       kubectl get secret "$1-postcreate" -o jsonpath='{.data.*}' | base64 -d > /postcreation_steps.yaml
+       cat /postcreation_steps.yaml
+    fi
+    }
+
+
 # get tkg credentials for a cluster
 get_creds(){
     local cluster=$1
@@ -25,19 +35,12 @@ postcreation(){
     if [ $? -eq 0 ]; then
         echo "Task Succeeded"
     else
-        echo "FAIL"
-        arr=($result)
-        echo "Writing arguments"
-        echo ${arr[0]}
-        until [[ ${arr[0]} != Error ]]
+        until result=$(kubectl apply -f postcreation_steps.yaml --context=$1-admin@$1)
         do
-            echo "An error occurred. This operation will be retried when the cluster is ready"
             #wait before retrying
             sleep 30
-            result=$(kubectl apply -f postcreation_steps.yaml --context=$1-admin@$1)
-            arr=($result)
         done
-        echo $result
+        echo "Retry loop complete. Task succeeded!"
     fi
     #check to make sure the command was successfully executed if not, wait and
     #repeat
@@ -54,6 +57,7 @@ do
     then
         echo "Cluster has been provisioned"
         creds=$(get_creds $1)
+        postapplyyaml=$(get_postapply_yaml $1)
         postresult=$(postcreation $1)
         echo $postresult
         # Do Other Stuff here ######
